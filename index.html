@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desabafo - Y2K / Indie Sleaze Audio Sync</title>
+    <title>Desabafo - Y2K / Indie Sleaze</title>
     <style>
         body, html {
             margin: 0;
@@ -21,13 +21,20 @@
             cursor: pointer; 
         }
 
+        /* Botão inicial - CLICK ME sublinhado e a piscar */
         #click-prompt {
             position: absolute;
-            font-size: 1.5rem;
+            font-size: 2.5rem;
             letter-spacing: -0.03em;
             text-transform: uppercase;
             font-weight: bold;
+            text-decoration: underline;
             z-index: 10;
+            animation: text-flash 0.6s infinite steps(1); /* Piscar seco sem transição */
+        }
+
+        @keyframes text-flash {
+            50% { opacity: 0; }
         }
 
         .scroller-container {
@@ -88,9 +95,9 @@
 </head>
 <body>
 
-    <audio id="my-audio" src="note-velocity.mp3" loop></audio>
+    <audio id="my-audio" src="note-velocity.mp3" loop preloaded="auto"></audio>
     
-    <div id="click-prompt">[ CLICA EM QUALQUER LUGAR PARA ENTRAR ]</div>
+    <div id="click-prompt">CLICK ME</div>
 
     <div class="scroller-container" id="canvas">
         <div class="scroller-content" id="scroll-target">
@@ -133,7 +140,6 @@
         
         let currentY = 0;
         let isStarted = false;
-        let audioCtx;
 
         const indiePalettes = [
             { bg: "#0000ff", text: "#ffff00" }, 
@@ -155,49 +161,12 @@
             const palette = indiePalettes[currentPaletteIndex];
             document.body.style.backgroundColor = palette.bg;
             document.body.style.color = palette.text;
+            
+            const nextInterval = Math.random() * 300 + 150; 
+            setTimeout(changeColor, nextInterval);
         }
 
-        function initAudioSync() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Bypass nativo para evitar o erro de segurança CORS do GitHub Pages
-            const source = audioCtx.createMediaElementSource(audio);
-            const analyser = audioCtx.createAnalyser();
-            
-            source.connect(analyser);
-            analyser.connect(audioCtx.destination);
-            
-            analyser.fftSize = 64; 
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            
-            let beatDetected = false;
-
-            function analyze() {
-                requestAnimationFrame(analyze);
-                analyser.getByteFrequencyData(dataArray);
-                
-                let bassSum = 0;
-                for (let i = 0; i < 4; i++) {
-                    bassSum += dataArray[i];
-                }
-                let bassAverage = bassSum / 4;
-
-                // Se a música disparar mas o ecrã não piscar ao ritmo,
-                // podes baixar este número para 150 ou 180.
-                if (bassAverage > 200) {
-                    if (!beatDetected) {
-                        changeColor(); 
-                        beatDetected = true;
-                    }
-                } else {
-                    beatDetected = false;
-                }
-            }
-            analyze();
-        }
-
-        // CLIQUE DE ATIVAÇÃO
+        // DISPARO AO CLIQUE
         document.body.addEventListener('click', () => {
             if (isStarted) return; 
             isStarted = true;
@@ -206,22 +175,9 @@
             container.style.display = 'block';
             document.body.style.cursor = 'default'; 
             
-            // Inicializa e força o play imediatamente
-            initAudioSync();
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            audio.play().catch(e => console.log("Erro de som:", e));
 
-            // Tenta reproduzir o áudio diretamente
-            audio.play().then(() => {
-                console.log("Áudio a reproduzir com sucesso!");
-            }).catch(e => {
-                console.log("Erro de áudio:", e);
-                // Fallback de emergência caso o motor de análise falhe:
-                // O site vai continuar a funcionar e a piscar de forma caótica mesmo sem som
-                setInterval(changeColor, 400);
-            });
-
+            changeColor();
             typeNextElement();   
         });
 
@@ -238,117 +194,4 @@
         }
 
         const elementsToType = Array.from(sourceBlock.querySelectorAll('[data-type]'));
-        let currentElementIndex = 0;
-
-        const originalTexts = elementsToType.map(el => {
-            const html = el.innerHTML;
-            el.innerHTML = ''; 
-            return html;
-        });
-
-        const cursor = document.createElement('span');
-        cursor.className = 'cursor';
-
-        const keyboardTypos = {
-            'a': 'qws', 'b': 'vghn', 'c': 'xvdf', 'd': 'ersfxc', 'e': 'wsdr',
-            'f': 'rtgvcd', 'g': 'tyhbvf', 'h': 'yujnbg', 'i': 'ujko', 'j': 'uikmnh',
-            'k': 'ijlm', 'l': 'okp', 'm': 'njk', 'n': 'bhjm', 'o': 'iklp',
-            'p': 'ol', 'q': 'wa', 'r': 'edft', 's': 'wedxz', 't': 'rfgy',
-            'u': 'yhji', 'v': 'cfgb', 'w': 'qase', 'x': 'zsdc', 'y': 'tghu', 'z': 'asx'
-        };
-
-        function typeNextElement() {
-            if (currentElementIndex >= elementsToType.length) {
-                if(cursor.parentNode) cursor.parentNode.removeChild(cursor);
-                return;
-            }
-
-            const el = elementsToType[currentElementIndex];
-            const fullHTML = originalTexts[currentElementIndex];
-            
-            el.classList.add('typing-active');
-            el.appendChild(cursor);
-
-            centralizeOnCursor();
-
-            let i = 0;
-            let currentHTML = "";
-            let lastCursorTop = cursor.getBoundingClientRect().top;
-
-            function typeLoop() {
-                if (i < fullHTML.length) {
-                    if (fullHTML.substr(i, 4) === '<br>') {
-                        currentHTML += '<br>';
-                        i += 4;
-                        el.innerHTML = currentHTML;
-                        el.appendChild(cursor);
-                        
-                        centralizeOnCursor();
-                        lastCursorTop = cursor.getBoundingClientRect().top;
-                        setTimeout(typeLoop, 40);
-                        return;
-                    }
-
-                    const currentChar = fullHTML[i];
-                    
-                    if (Math.random() < 0.04 && keyboardTypos[currentChar.toLowerCase()] && i < fullHTML.length - 1) {
-                        const typos = keyboardTypos[currentChar.toLowerCase()];
-                        const wrongChar = typos[Math.floor(Math.random() * typos.length)];
-                        
-                        currentHTML += (currentChar === currentChar.toUpperCase()) ? wrongChar.toUpperCase() : wrongChar;
-                        el.innerHTML = currentHTML;
-                        el.appendChild(cursor);
-
-                        setTimeout(() => {
-                            currentHTML = currentHTML.slice(0, -1); 
-                            el.innerHTML = currentHTML;
-                            el.appendChild(cursor);
-                            
-                            setTimeout(() => {
-                                currentHTML += currentChar; 
-                                el.innerHTML = currentHTML;
-                                el.appendChild(cursor);
-                                i++;
-                                setTimeout(typeLoop, Math.random() * 80 + 30);
-                            }, 80); 
-                        }, 140); 
-                        
-                        return;
-                    }
-
-                    currentHTML += currentChar;
-                    el.innerHTML = currentHTML;
-                    el.appendChild(cursor);
-
-                    const currentCursorTop = cursor.getBoundingClientRect().top;
-                    if (Math.abs(currentCursorTop - lastCursorTop) > 5) {
-                        centralizeOnCursor();
-                        lastCursorTop = cursor.getBoundingClientRect().top;
-                    } else {
-                        lastCursorTop = currentCursorTop;
-                    }
-
-                    let nextDelay = Math.random() * 60 + 30; 
-                    if (['.', ';', ':', '—'].includes(currentChar)) {
-                        nextDelay = Math.random() * 600 + 300; 
-                    } else if (currentChar === ',') {
-                        nextDelay = Math.random() * 200 + 100;
-                    }
-
-                    i++;
-                    setTimeout(typeLoop, nextDelay);
-                } else {
-                    currentElementIndex++;
-                    setTimeout(typeNextElement, Math.random() * 400 + 150);
-                }
-            }
-
-            setTimeout(() => {
-                lastCursorTop = cursor.getBoundingClientRect().top;
-                typeLoop();
-            }, 10);
-        }
-    </script>
-
-</body>
-</html>
+        let currentElement
