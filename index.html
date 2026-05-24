@@ -18,10 +18,9 @@
             background-color: #0000ff; 
             color: #ffff00;
             transition: none;
-            cursor: pointer; /* Indica que o ecrã é interativo */
+            cursor: pointer; 
         }
 
-        /* Mensagem minimalista inicial estilo Y2K / Net Art */
         #click-prompt {
             position: absolute;
             font-size: 1.5rem;
@@ -38,7 +37,7 @@
             height: 100vh;
             overflow: hidden;
             position: relative;
-            display: none; /* Oculto até ao clique inicial */
+            display: none; 
         }
 
         .scroller-content {
@@ -134,8 +133,8 @@
         
         let currentY = 0;
         let isStarted = false;
+        let audioCtx;
 
-        // --- PALETAS FLAT CRUAS (Y2K / INDIE SLEAZE) ---
         const indiePalettes = [
             { bg: "#0000ff", text: "#ffff00" }, 
             { bg: "#ff00ff", text: "#00ff00" }, 
@@ -158,9 +157,10 @@
             document.body.style.color = palette.text;
         }
 
-        // --- MOTOR AUDIO SINK ---
         function initAudioSync() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Bypass nativo para evitar o erro de segurança CORS do GitHub Pages
             const source = audioCtx.createMediaElementSource(audio);
             const analyser = audioCtx.createAnalyser();
             
@@ -183,8 +183,9 @@
                 }
                 let bassAverage = bassSum / 4;
 
-                // Threshold ajustado para 210. Altera se precisares de mais/menos sensibilidade à batida.
-                if (bassAverage > 210) {
+                // Se a música disparar mas o ecrã não piscar ao ritmo,
+                // podes baixar este número para 150 ou 180.
+                if (bassAverage > 200) {
                     if (!beatDetected) {
                         changeColor(); 
                         beatDetected = true;
@@ -196,21 +197,34 @@
             analyze();
         }
 
-        // --- ATIVAÇÃO GLOBAL COM UM CLIQUE EM QUALQUER PONTO ---
+        // CLIQUE DE ATIVAÇÃO
         document.body.addEventListener('click', () => {
-            if (isStarted) return; // Evita reativar se voltar a clicar
+            if (isStarted) return; 
             isStarted = true;
 
             clickPrompt.style.display = 'none';
             container.style.display = 'block';
-            document.body.style.cursor = 'default'; // Restaura o rato normal
+            document.body.style.cursor = 'default'; 
             
-            audio.play().catch(e => console.log("Erro de reprodução:", e));
+            // Inicializa e força o play imediatamente
             initAudioSync();
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            // Tenta reproduzir o áudio diretamente
+            audio.play().then(() => {
+                console.log("Áudio a reproduzir com sucesso!");
+            }).catch(e => {
+                console.log("Erro de áudio:", e);
+                // Fallback de emergência caso o motor de análise falhe:
+                // O site vai continuar a funcionar e a piscar de forma caótica mesmo sem som
+                setInterval(changeColor, 400);
+            });
+
             typeNextElement();   
         });
 
-        // --- ENGINE DE CENTRALIZAÇÃO POR IMPACTO SECO ---
         function centralizeOnCursor() {
             const activeCursor = document.querySelector('.cursor');
             if (activeCursor) {
@@ -223,7 +237,6 @@
             }
         }
 
-        // --- ENGINE DA MÁQUINA DE ESCREVER ---
         const elementsToType = Array.from(sourceBlock.querySelectorAll('[data-type]'));
         let currentElementIndex = 0;
 
