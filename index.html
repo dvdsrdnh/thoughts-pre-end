@@ -18,9 +18,9 @@
             background-color: #0000ff; 
             color: #ffff00;
             transition: none;
-            cursor: pointer; 
         }
 
+        /* Botão inicial - CLICK ME totalmente clicável, sublinhado e a piscar */
         #click-prompt {
             position: absolute;
             font-size: 2.5rem;
@@ -28,7 +28,9 @@
             text-transform: uppercase;
             font-weight: bold;
             text-decoration: underline;
-            z-index: 10;
+            z-index: 9999;
+            cursor: pointer;
+            user-select: none;
             animation: text-flash 0.6s infinite steps(1);
         }
 
@@ -140,6 +142,7 @@
         let currentY = 0;
         let isStarted = false;
         let colorInterval;
+        let isAudioPlaying = true;
 
         const indiePalettes = [
             { bg: "#0000ff", text: "#ffff00" }, 
@@ -153,6 +156,8 @@
         let currentPaletteIndex = 0;
 
         function changeColor() {
+            if (!isAudioPlaying) return; 
+            
             let nextIndex = Math.floor(Math.random() * indiePalettes.length);
             while (nextIndex === currentPaletteIndex) {
                 nextIndex = Math.floor(Math.random() * indiePalettes.length);
@@ -177,114 +182,137 @@
             }
         }
 
-        // --- MAPEAR E PREPARAR O TEXTO PARA REPRODUÇÃO GLOBAL ---
-        const elements = Array.from(sourceBlock.querySelectorAll('[data-type]'));
-        
-        // Extrai os textos originais e limpa os parágrafos
-        const originalHTMLs = elements.map(el => {
-            const html = el.innerHTML;
-            el.innerHTML = '';
-            return html;
-        });
+        const elementsToType = Array.from(sourceBlock.querySelectorAll('[data-type]'));
+        let currentElementIndex = 0;
 
-        // Cria uma "timeline" linear de caracteres fictícios para saber o tamanho total do manifesto
-        // `<br>` conta como 1 bloco para não estragar a contagem
-        let totalLength = 0;
-        const segments = originalHTMLs.map(html => {
-            let parts = [];
-            let idx = 0;
-            while(idx < html.length) {
-                if(html.substr(idx, 4) === '<br>') {
-                    parts.push('<br>');
-                    idx += 4;
-                } else {
-                    parts.push(html[idx]);
-                    idx++;
-                }
-            }
-            totalLength += parts.length;
-            return parts;
+        const originalTexts = elementsToType.map(el => {
+            const html = el.innerHTML;
+            el.innerHTML = ''; 
+            return html;
         });
 
         const cursor = document.createElement('span');
         cursor.className = 'cursor';
 
-        // --- ENGINE DE DIGITAÇÃO SINCRONIZADA PELO RELÓGIO DA MÚSICA ---
-        function updateTextTimeline() {
-            if (!audio.duration) return;
+        const keyboardTypos = {
+            'a': 'qws', 'b': 'vghn', 'c': 'xvdf', 'd': 'ersfxc', 'e': 'wsdr',
+            'f': 'rtgvcd', 'g': 'tyhbvf', 'h': 'yujnbg', 'i': 'ujko', 'j': 'uikmnh',
+            'k': 'ijlm', 'l': 'okp', 'm': 'njk', 'n': 'bhjm', 'o': 'iklp',
+            'p': 'ol', 'q': 'wa', 'r': 'edft', 's': 'wedxz', 't': 'rfgy',
+            'u': 'yhji', 'v': 'cfgb', 'w': 'qase', 'x': 'zsdc', 'y': 'tghu', 'z': 'asx'
+        };
 
-            // Percentagem de progresso da música (0.0 a 1.0)
-            const progress = audio.currentTime / audio.duration;
+        function typeNextElement() {
+            if (currentElementIndex >= elementsToType.length) {
+                return;
+            }
+
+            const el = elementsToType[currentElementIndex];
+            const fullHTML = originalTexts[currentElementIndex];
             
-            // Quantos caracteres devem estar visíveis neste exato milissegundo
-            const targetVisibleChars = Math.floor(progress * totalLength);
-            
-            let charsCounted = 0;
-            let currentActiveElement = null;
+            el.classList.add('typing-active');
+            el.appendChild(cursor);
+            centralizeOnCursor();
 
-            for (let eIdx = 0; eIdx < elements.length; eIdx++) {
-                const el = elements[eIdx];
-                const segment = segments[eIdx];
-                
-                if (charsCounted >= targetVisibleChars) {
-                    // Este parágrafo e os seguintes ainda não devem aparecer
-                    el.classList.remove('typing-active');
-                    el.innerHTML = '';
-                    continue;
-                }
+            let i = 0;
+            let currentHTML = "";
+            let lastCursorTop = cursor.getBoundingClientRect().top;
 
-                el.classList.add('typing-active');
-                
-                // Determina quantos caracteres deste parágrafo específico vão ser renderizados
-                let charsToShow = targetVisibleChars - charsCounted;
-                if (charsToShow > segment.length) {
-                    charsToShow = segment.length;
-                }
-
-                const visibleSlice = segment.slice(0, charsToShow).join('');
-                el.innerHTML = visibleSlice;
-                
-                // Guarda qual é o parágrafo que está a ser dactilografado ativamente agora
-                if (charsToShow < segment.length || eIdx === elements.length - 1) {
-                    if (!currentActiveElement) {
-                        currentActiveElement = el;
+            function typeLoop() {
+                if (i < fullHTML.length) {
+                    if (fullHTML.substr(i, 4) === '<br>') {
+                        currentHTML += '<br>';
+                        i += 4;
+                        el.innerHTML = currentHTML;
+                        el.appendChild(cursor);
+                        
+                        centralizeOnCursor();
+                        lastCursorTop = cursor.getBoundingClientRect().top;
+                        setTimeout(typeLoop, 40);
+                        return;
                     }
+
+                    const currentChar = fullHTML[i];
+                    
+                    if (Math.random() < 0.03 && keyboardTypos[currentChar.toLowerCase()] && i < fullHTML.length - 1) {
+                        const typos = keyboardTypos[currentChar.toLowerCase()];
+                        const wrongChar = typos[Math.floor(Math.random() * typos.length)];
+                        
+                        currentHTML += (currentChar === currentChar.toUpperCase()) ? wrongChar.toUpperCase() : wrongChar;
+                        el.innerHTML = currentHTML;
+                        el.appendChild(cursor);
+
+                        setTimeout(() => {
+                            currentHTML = currentHTML.slice(0, -1); 
+                            el.innerHTML = currentHTML;
+                            el.appendChild(cursor);
+                            
+                            setTimeout(() => {
+                                currentHTML += currentChar; 
+                                el.innerHTML = currentHTML;
+                                el.appendChild(cursor);
+                                i++;
+                                setTimeout(typeLoop, 45); 
+                            }, 50); 
+                        }, 90); 
+                        
+                        return;
+                    }
+
+                    currentHTML += currentChar;
+                    el.innerHTML = currentHTML;
+                    el.appendChild(cursor);
+
+                    const currentCursorTop = cursor.getBoundingClientRect().top;
+                    if (Math.abs(currentCursorTop - lastCursorTop) > 5) {
+                        centralizeOnCursor();
+                        lastCursorTop = cursor.getBoundingClientRect().top;
+                    } else {
+                        lastCursorTop = currentCursorTop;
+                    }
+
+                    let nextDelay = 42; 
+                    if (['.', ';', ':'].includes(currentChar)) {
+                        nextDelay = 550; 
+                    } else if (currentChar === ',' || currentChar === '—') {
+                        nextDelay = 220;
+                    }
+
+                    i++;
+                    setTimeout(typeLoop, nextDelay);
+                } else {
+                    currentElementIndex++;
+                    setTimeout(typeNextElement, 350); 
                 }
-
-                charsCounted += segment.length;
             }
 
-            // Reposiciona o cursor mecânico no parágrafo ativo atual
-            if (currentActiveElement) {
-                currentActiveElement.appendChild(cursor);
-                centralizeOnCursor();
-            }
+            setTimeout(() => {
+                lastCursorTop = cursor.getBoundingClientRect().top;
+                typeLoop();
+            }, 10);
         }
 
-        // Evento disparado continuamente pelo browser à medida que o áudio toca
-        audio.addEventListener('timeupdate', updateTextTimeline);
-
-        // Quando a música acaba, o caos visual para e o manifesto fica limpo e estático
         audio.addEventListener('ended', () => {
+            isAudioPlaying = false;
             clearTimeout(colorInterval);
             if(cursor.parentNode) cursor.parentNode.removeChild(cursor);
-            // Fixa numa paleta final limpa e legível (ex: fundo preto, texto verde matriz)
+            
             document.body.style.backgroundColor = "#000000";
             document.body.style.color = "#00ff00";
         });
 
-        // DISPARO AO CLIQUE
-        document.body.addEventListener('click', () => {
+        // O CLIQUE AGORA ESCUTA DIRETAMENTE O BOTÃO EXCLUSIVO
+        clickPrompt.addEventListener('click', () => {
             if (isStarted) return; 
             isStarted = true;
 
             clickPrompt.style.display = 'none';
             container.style.display = 'block';
-            document.body.style.cursor = 'default'; 
             
             audio.play().catch(e => console.log("Erro de som:", e));
 
             changeColor();
+            typeNextElement(); 
         });
     </script>
 
