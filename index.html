@@ -21,7 +21,6 @@
             cursor: pointer; 
         }
 
-        /* Botão inicial - CLICK ME sublinhado e a piscar */
         #click-prompt {
             position: absolute;
             font-size: 2.5rem;
@@ -30,7 +29,7 @@
             font-weight: bold;
             text-decoration: underline;
             z-index: 10;
-            animation: text-flash 0.6s infinite steps(1); /* Piscar seco sem transição */
+            animation: text-flash 0.6s infinite steps(1);
         }
 
         @keyframes text-flash {
@@ -95,7 +94,7 @@
 </head>
 <body>
 
-    <audio id="my-audio" src="note-velocity.mp3" loop preloaded="auto"></audio>
+    <audio id="my-audio" src="note-velocity.mp3" preloaded="auto"></audio>
     
     <div id="click-prompt">CLICK ME</div>
 
@@ -140,6 +139,7 @@
         
         let currentY = 0;
         let isStarted = false;
+        let colorInterval;
 
         const indiePalettes = [
             { bg: "#0000ff", text: "#ffff00" }, 
@@ -163,8 +163,115 @@
             document.body.style.color = palette.text;
             
             const nextInterval = Math.random() * 300 + 150; 
-            setTimeout(changeColor, nextInterval);
+            colorInterval = setTimeout(changeColor, nextInterval);
         }
+
+        function centralizeOnCursor() {
+            const activeCursor = document.querySelector('.cursor');
+            if (activeCursor) {
+                const cursorRect = activeCursor.getBoundingClientRect();
+                const viewCenter = window.innerHeight / 2;
+                const offset = cursorRect.top - viewCenter;
+                currentY -= offset;
+                scrollTarget.style.transform = `translateY(${currentY}px)`;
+            }
+        }
+
+        // --- MAPEAR E PREPARAR O TEXTO PARA REPRODUÇÃO GLOBAL ---
+        const elements = Array.from(sourceBlock.querySelectorAll('[data-type]'));
+        
+        // Extrai os textos originais e limpa os parágrafos
+        const originalHTMLs = elements.map(el => {
+            const html = el.innerHTML;
+            el.innerHTML = '';
+            return html;
+        });
+
+        // Cria uma "timeline" linear de caracteres fictícios para saber o tamanho total do manifesto
+        // `<br>` conta como 1 bloco para não estragar a contagem
+        let totalLength = 0;
+        const segments = originalHTMLs.map(html => {
+            let parts = [];
+            let idx = 0;
+            while(idx < html.length) {
+                if(html.substr(idx, 4) === '<br>') {
+                    parts.push('<br>');
+                    idx += 4;
+                } else {
+                    parts.push(html[idx]);
+                    idx++;
+                }
+            }
+            totalLength += parts.length;
+            return parts;
+        });
+
+        const cursor = document.createElement('span');
+        cursor.className = 'cursor';
+
+        // --- ENGINE DE DIGITAÇÃO SINCRONIZADA PELO RELÓGIO DA MÚSICA ---
+        function updateTextTimeline() {
+            if (!audio.duration) return;
+
+            // Percentagem de progresso da música (0.0 a 1.0)
+            const progress = audio.currentTime / audio.duration;
+            
+            // Quantos caracteres devem estar visíveis neste exato milissegundo
+            const targetVisibleChars = Math.floor(progress * totalLength);
+            
+            let charsCounted = 0;
+            let currentActiveElement = null;
+
+            for (let eIdx = 0; eIdx < elements.length; eIdx++) {
+                const el = elements[eIdx];
+                const segment = segments[eIdx];
+                
+                if (charsCounted >= targetVisibleChars) {
+                    // Este parágrafo e os seguintes ainda não devem aparecer
+                    el.classList.remove('typing-active');
+                    el.innerHTML = '';
+                    continue;
+                }
+
+                el.classList.add('typing-active');
+                
+                // Determina quantos caracteres deste parágrafo específico vão ser renderizados
+                let charsToShow = targetVisibleChars - charsCounted;
+                if (charsToShow > segment.length) {
+                    charsToShow = segment.length;
+                }
+
+                const visibleSlice = segment.slice(0, charsToShow).join('');
+                el.innerHTML = visibleSlice;
+                
+                // Guarda qual é o parágrafo que está a ser dactilografado ativamente agora
+                if (charsToShow < segment.length || eIdx === elements.length - 1) {
+                    if (!currentActiveElement) {
+                        currentActiveElement = el;
+                    }
+                }
+
+                charsCounted += segment.length;
+            }
+
+            // Reposiciona o cursor mecânico no parágrafo ativo atual
+            if (currentActiveElement) {
+                currentActiveElement.appendChild(cursor);
+                centralizeOnCursor();
+            }
+        }
+
+        // Evento disparado continuamente pelo browser à medida que o áudio toca
+        audio.addEventListener('timeupdate', updateTextTimeline);
+
+        // Quando a música acaba, o caos visual para e o manifesto fica limpo e estático
+        audio.addEventListener('ended', () => {
+            clearTimeout(colorInterval);
+            if(cursor.parentNode) cursor.parentNode.removeChild(cursor);
+            // Fixa numa paleta final limpa e legível (ex: fundo preto, texto verde matriz)
+            document.body.style.backgroundColor = "#000000";
+            document.body.style.color = "#00ff00";
+        });
 
         // DISPARO AO CLIQUE
         document.body.addEventListener('click', () => {
@@ -178,132 +285,7 @@
             audio.play().catch(e => console.log("Erro de som:", e));
 
             changeColor();
-            typeNextElement();   
         });
-
-        function centralizeOnCursor() {
-            const activeCursor = document.querySelector('.cursor');
-            if (activeCursor) {
-                const cursorRect = activeCursor.getBoundingClientRect();
-                const viewCenter = window.innerHeight / 2;
-                const offset = cursorRect.top - viewCenter;
-
-                currentY -= offset;
-                scrollTarget.style.transform = `translateY(${currentY}px)`;
-            }
-        }
-
-        const elementsToType = Array.from(sourceBlock.querySelectorAll('[data-type]'));
-        let currentElementIndex = 0;
-
-        const originalTexts = elementsToType.map(el => {
-            const html = el.innerHTML;
-            el.innerHTML = ''; 
-            return html;
-        });
-
-        const cursor = document.createElement('span');
-        cursor.className = 'cursor';
-
-        const keyboardTypos = {
-            'a': 'qws', 'b': 'vghn', 'c': 'xvdf', 'd': 'ersfxc', 'e': 'wsdr',
-            'f': 'rtgvcd', 'g': 'tyhbvf', 'h': 'yujnbg', 'i': 'ujko', 'j': 'uikmnh',
-            'k': 'ijlm', 'l': 'okp', 'm': 'njk', 'n': 'bhjm', 'o': 'iklp',
-            'p': 'ol', 'q': 'wa', 'r': 'edft', 's': 'wedxz', 't': 'rfgy',
-            'u': 'yhji', 'v': 'cfgb', 'w': 'qase', 'x': 'zsdc', 'y': 'tghu', 'z': 'asx'
-        };
-
-        function typeNextElement() {
-            if (currentElementIndex >= elementsToType.length) {
-                if(cursor.parentNode) cursor.parentNode.removeChild(cursor);
-                return;
-            }
-
-            const el = elementsToType[currentElementIndex];
-            const fullHTML = originalTexts[currentElementIndex];
-            
-            el.classList.add('typing-active');
-            el.appendChild(cursor);
-
-            centralizeOnCursor();
-
-            let i = 0;
-            let currentHTML = "";
-            let lastCursorTop = cursor.getBoundingClientRect().top;
-
-            function typeLoop() {
-                if (i < fullHTML.length) {
-                    if (fullHTML.substr(i, 4) === '<br>') {
-                        currentHTML += '<br>';
-                        i += 4;
-                        el.innerHTML = currentHTML;
-                        el.appendChild(cursor);
-                        
-                        centralizeOnCursor();
-                        lastCursorTop = cursor.getBoundingClientRect().top;
-                        setTimeout(typeLoop, 40);
-                        return;
-                    }
-
-                    const currentChar = fullHTML[i];
-                    
-                    if (Math.random() < 0.04 && keyboardTypos[currentChar.toLowerCase()] && i < fullHTML.length - 1) {
-                        const typos = keyboardTypos[currentChar.toLowerCase()];
-                        const wrongChar = typos[Math.floor(Math.random() * typos.length)];
-                        
-                        currentHTML += (currentChar === currentChar.toUpperCase()) ? wrongChar.toUpperCase() : wrongChar;
-                        el.innerHTML = currentHTML;
-                        el.appendChild(cursor);
-
-                        setTimeout(() => {
-                            currentHTML = currentHTML.slice(0, -1); 
-                            el.innerHTML = currentHTML;
-                            el.appendChild(cursor);
-                            
-                            setTimeout(() => {
-                                currentHTML += currentChar; 
-                                el.innerHTML = currentHTML;
-                                el.appendChild(cursor);
-                                i++;
-                                setTimeout(typeLoop, Math.random() * 80 + 30);
-                            }, 80); 
-                        }, 140); 
-                        
-                        return;
-                    }
-
-                    currentHTML += currentChar;
-                    el.innerHTML = currentHTML;
-                    el.appendChild(cursor);
-
-                    const currentCursorTop = cursor.getBoundingClientRect().top;
-                    if (Math.abs(currentCursorTop - lastCursorTop) > 5) {
-                        centralizeOnCursor();
-                        lastCursorTop = cursor.getBoundingClientRect().top;
-                    } else {
-                        lastCursorTop = currentCursorTop;
-                    }
-
-                    let nextDelay = Math.random() * 60 + 30; 
-                    if (['.', ';', ':', '—'].includes(currentChar)) {
-                        nextDelay = Math.random() * 600 + 300; 
-                    } else if (currentChar === ',') {
-                        nextDelay = Math.random() * 200 + 100;
-                    }
-
-                    i++;
-                    setTimeout(typeLoop, nextDelay);
-                } else {
-                    currentElementIndex++;
-                    setTimeout(typeNextElement, Math.random() * 400 + 150);
-                }
-            }
-
-            setTimeout(() => {
-                lastCursorTop = cursor.getBoundingClientRect().top;
-                typeLoop();
-            }, 10);
-        }
     </script>
 
 </body>
