@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desabafo - Y2K / Indie Sleaze</title>
+    <title>Desabafo - Y2K / Indie Sleaze Audio Sync</title>
     <style>
         body, html {
             margin: 0;
@@ -14,10 +14,21 @@
             overflow: hidden;         
             display: flex;
             justify-content: center;
-            
-            /* Cores flat de arranque */
+            align-items: center;
             background-color: #0000ff; 
             color: #ffff00;
+            transition: none;
+            cursor: pointer; /* Indica que o ecrã é interativo */
+        }
+
+        /* Mensagem minimalista inicial estilo Y2K / Net Art */
+        #click-prompt {
+            position: absolute;
+            font-size: 1.5rem;
+            letter-spacing: -0.03em;
+            text-transform: uppercase;
+            font-weight: bold;
+            z-index: 10;
         }
 
         .scroller-container {
@@ -27,6 +38,7 @@
             height: 100vh;
             overflow: hidden;
             position: relative;
+            display: none; /* Oculto até ao clique inicial */
         }
 
         .scroller-content {
@@ -45,12 +57,10 @@
         p, h1, .list-item {
             font-size: 2.5rem;       
             line-height: 1.15;       
-            margin-bottom: 0;        /* Mantém a compressão Indie Sleaze */
+            margin-bottom: 0;        
             font-weight: normal;
             letter-spacing: -0.03em; 
             position: relative;
-            
-            /* Começam totalmente invisíveis */
             visibility: hidden;
         }
         
@@ -62,7 +72,6 @@
             height: 100vh; 
         }
 
-        /* Cursor mecânico herda a cor flat ativa */
         .cursor {
             display: inline-block;
             width: 3px;
@@ -79,6 +88,10 @@
     </style>
 </head>
 <body>
+
+    <audio id="my-audio" src="note-velocity.mp3" loop></audio>
+    
+    <div id="click-prompt">[ CLICA EM QUALQUER LUGAR PARA ENTRAR ]</div>
 
     <div class="scroller-container" id="canvas">
         <div class="scroller-content" id="scroll-target">
@@ -115,8 +128,12 @@
     <script>
         const scrollTarget = document.getElementById('scroll-target');
         const sourceBlock = document.getElementById('source-block');
+        const clickPrompt = document.getElementById('click-prompt');
+        const container = document.getElementById('canvas');
+        const audio = document.getElementById('my-audio');
         
         let currentY = 0;
+        let isStarted = false;
 
         // --- PALETAS FLAT CRUAS (Y2K / INDIE SLEAZE) ---
         const indiePalettes = [
@@ -128,24 +145,70 @@
             { bg: "#ffffff", text: "#0000ff" }, 
             { bg: "#ff3300", text: "#ffffff" }  
         ];
-
         let currentPaletteIndex = 0;
 
-        function triggerSleazeFlash() {
+        function changeColor() {
             let nextIndex = Math.floor(Math.random() * indiePalettes.length);
             while (nextIndex === currentPaletteIndex) {
                 nextIndex = Math.floor(Math.random() * indiePalettes.length);
             }
             currentPaletteIndex = nextIndex;
-            
             const palette = indiePalettes[currentPaletteIndex];
-            
             document.body.style.backgroundColor = palette.bg;
             document.body.style.color = palette.text;
-            
-            const nextFlash = Math.random() * 650 + 150;
-            setTimeout(triggerSleazeFlash, nextFlash);
         }
+
+        // --- MOTOR AUDIO SINK ---
+        function initAudioSync() {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioCtx.createMediaElementSource(audio);
+            const analyser = audioCtx.createAnalyser();
+            
+            source.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            
+            analyser.fftSize = 64; 
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            let beatDetected = false;
+
+            function analyze() {
+                requestAnimationFrame(analyze);
+                analyser.getByteFrequencyData(dataArray);
+                
+                let bassSum = 0;
+                for (let i = 0; i < 4; i++) {
+                    bassSum += dataArray[i];
+                }
+                let bassAverage = bassSum / 4;
+
+                // Threshold ajustado para 210. Altera se precisares de mais/menos sensibilidade à batida.
+                if (bassAverage > 210) {
+                    if (!beatDetected) {
+                        changeColor(); 
+                        beatDetected = true;
+                    }
+                } else {
+                    beatDetected = false;
+                }
+            }
+            analyze();
+        }
+
+        // --- ATIVAÇÃO GLOBAL COM UM CLIQUE EM QUALQUER PONTO ---
+        document.body.addEventListener('click', () => {
+            if (isStarted) return; // Evita reativar se voltar a clicar
+            isStarted = true;
+
+            clickPrompt.style.display = 'none';
+            container.style.display = 'block';
+            document.body.style.cursor = 'default'; // Restaura o rato normal
+            
+            audio.play().catch(e => console.log("Erro de reprodução:", e));
+            initAudioSync();
+            typeNextElement();   
+        });
 
         // --- ENGINE DE CENTRALIZAÇÃO POR IMPACTO SECO ---
         function centralizeOnCursor() {
@@ -272,11 +335,6 @@
                 typeLoop();
             }, 10);
         }
-
-        window.addEventListener('load', () => {
-            triggerSleazeFlash(); 
-            typeNextElement();   
-        });
     </script>
 
 </body>
