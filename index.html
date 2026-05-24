@@ -15,7 +15,7 @@
             display: flex;
             justify-content: center;
             
-            /* Cores flat de arranque (Estética Flash/Early Web) */
+            /* Cores flat de arranque */
             background-color: #0000ff; 
             color: #ffff00;
         }
@@ -45,9 +45,9 @@
         p, h1, .list-item {
             font-size: 2.5rem;       
             line-height: 1.15;       
-            margin-bottom: 0;        /* Texto completamente colado e compactado */
+            margin-bottom: 0;        /* Mantém a compressão Indie Sleaze */
             font-weight: normal;
-            letter-spacing: -0.03em; /* Letras ligeiramente sobrepostas à anos 2000 */
+            letter-spacing: -0.03em; 
             position: relative;
             
             /* Começam totalmente invisíveis */
@@ -84,22 +84,27 @@
         <div class="scroller-content" id="scroll-target">
             
             <div class="text-block" id="source-block">
-                <p data-type>I’m near the end of a cycle; And lately I’ve been thinking about what’s coming next — which still is vague.</p>
-                <p data-type>Three years have passed and I’ve grown. A lot;<br>But still, I don't feel neither understood nor fully part of something; And I don’t think I’ll ever be.</p>
-                <p data-type>However, I’ve been questioning everything, because it feels so weird to still want to be anything else in life, when we are facing an apocalyptic landscape which all the crisis are happening simultaneously. When everything seems to be falling apart, I just started to CARE LESS about my actions repercussions;<br>Which is good for someone who overthinks and also it’s so relieving to know that nobody really cares about what we’re doing or if we’re good enough. I guess that’s one benefit of living in a nihilist era in the middle of a crisis: you start taking risks, as a stress response to the status-quo; And then some surprises may come along the way.</p>
-                <p data-type>Everything feels suspended; That’s life at the cliff of an orgasm that never comes. I stopped making big plans for the future and start living with the doubt. There’s a big desire to be independent, be seen and valued, as many of my friends also do. But at the same time, it hurts a lot when nothing hits my mail box. Or even when nothing seems to feel right at the moment.</p>
-                <p data-type>I’ve been swinging between wanting stability and also wanting chaos in my life; In order to find something new, I truly believe that I can’t set myself too comfortably. There’s something interesting in inhabiting this tension; A sense of mystery and danger seems to unravel & Life feels interesting again; I never felt so complete in being attached and detached to everything.</p>
-                <p data-type>My purest desire is not having to prove nothing to anybody. Not needing someone to validate my worth. Not needing an important job or role in life to validate what I have to say. Not depending on external things to just simply exist. And after all the noise, I wish to disappear.</p>
-                <p data-type>The world is ending, however I still CARE about something even if it means to fight for a good end.</p>
-                <p data-type>Love = Effort = Empathy = Listening x Caring x Taking action = Transformation</p>
-                <p data-type>Some lessons that I’ve learned in life and also in my practice as a communication designer:<br>YES, it’s important to put effort into things</p>
+                <p data-type>I’m near the end of a cycle; And lately I’ve been thinking about what’s coming next — that is still vague.</p>
                 
-                <div class="list-item" data-type>Putting the constant effort in things</div>
-                <div class="list-item" data-type>Open your heart for curiosity over fear</div>
-                <div class="list-item" data-type>Redirecting energy from the ego to the collective:<br>I’m not creating as an individual, but as part of something even bigger. It makes a lot of sense if creative work is shared.</div>
-                <div class="list-item" data-type>Being out there for each other; a small act of support can empower a creative.</div>
+                <p data-type>Three years have passed and I’ve grown. A lot;<br>But still, I don't feel neither understood, nor fully part of something; And I don’t think I’ll ever be.</p>
                 
-                <p data-type>At the end, I must confess that the communication design degree made me smarter and hotter. What’s next?</p>
+                <p data-type>However, I’ve been questioning everything, because it feels so weird to still want to be anything else in life, when we are facing an apocalyptic landscape where all the crisis are happening simultaneously. When everything seems to be falling apart, I just started to CARE LESS about my actions repercussions;</p>
+                
+                <p data-type>Which is good for someone who overthinks and also it’s so relieving to know that nobody really cares about<br>what we’re doing or if we’re good enough. I guess that’s one benefit of living in a nihilist era in the middle of a crisis: you start taking risks, as a stress response to the status-quo; And then some surprises may come along the way.</p>
+                
+                <p data-type>Everything feels suspended; That’s life at the cliff of an orgasm that never comes.</p>
+                
+                <p data-type>I stopped making big plans for the future and started living with the doubt. There’s a big desire to be independent, be seen and valued, as many of my friends also do. But at the same time, it hurts a lot when nothing hits my mail box. Or even when nothing seems to feel right at the moment.</p>
+                
+                <p data-type>I’ve been swinging between wanting stability and also wanting chaos in my life; In order to find something new, I truly believe that I can’t set myself too comfortably. There’s something interesting in inhabiting this tension; A sense of mystery and danger seems to unravel &amp; Life feels interesting again; I never felt so complete in being attached and detached to everything.</p>
+                
+                <p data-type>My purest desire is not having to prove anything to anybody. Not needing someone to validate my worth.<br>Not needing an important job or role in life to validate what I have to say.<br>Not depending on external things to just simply exist.<br>And after all the noise, I wish to disappear.</p>
+                
+                <p data-type>And yet, the world is ending, however I still CARE; In this 3 years, I learnt that love is structural and political; And maybe that’s the only thing worth competing for.</p>
+                
+                <p data-type>As a communication designer, there are things that keep me putting on track: putting effort into what I believe is contemporary and relevant (or maybe not); choosing curiosity over fear, which can lead you to improbable futures; redirecting my energy from the ego to the collective. I’m not creating as an individual, but as part of something even culturally bigger, so it makes a lot of sense when creative work is shared.</p>
+                
+                <p data-type>At the end, I must confess that the communication design degree made me hotter. What’s next?</p>
             </div>
 
             <div class="spacer-end"></div>
@@ -114,20 +119,18 @@
         let currentY = 0;
 
         // --- PALETAS FLAT CRUAS (Y2K / INDIE SLEAZE) ---
-        // Cores sem misturas, puras da paleta web de 8-bit / início dos anos 2000
         const indiePalettes = [
-            { bg: "#0000ff", text: "#ffff00" }, // Azul Puro + Amarelo Eléctrico
-            { bg: "#ff00ff", text: "#00ff00" }, // Magenta + Verde Vómito (American Apparel vibe)
-            { bg: "#00ffff", text: "#ff0000" }, // Cyan + Vermelho Sangue
-            { bg: "#ffff00", text: "#000000" }, // Amarelo Estrada + Preto Poster
-            { bg: "#000000", text: "#00ff00" }, // Preto Terminal + Verde Matrix
-            { bg: "#ffffff", text: "#0000ff" }, // Branco Gesso + Azul Bic
-            { bg: "#ff3300", text: "#ffffff" }  // Laranja Ácido + Branco
+            { bg: "#0000ff", text: "#ffff00" }, 
+            { bg: "#ff00ff", text: "#00ff00" }, 
+            { bg: "#00ffff", text: "#ff0000" }, 
+            { bg: "#ffff00", text: "#000000" }, 
+            { bg: "#000000", text: "#00ff00" }, 
+            { bg: "#ffffff", text: "#0000ff" }, 
+            { bg: "#ff3300", text: "#ffffff" }  
         ];
 
         let currentPaletteIndex = 0;
 
-        // --- MOTOR DE PISCADO FLAT CAÓTICO ---
         function triggerSleazeFlash() {
             let nextIndex = Math.floor(Math.random() * indiePalettes.length);
             while (nextIndex === currentPaletteIndex) {
@@ -137,11 +140,9 @@
             
             const palette = indiePalettes[currentPaletteIndex];
             
-            // Injeção direta sem suavização
             document.body.style.backgroundColor = palette.bg;
             document.body.style.color = palette.text;
             
-            // Tempo instável para o batimento do piscar (ritmo de concerto de garagem)
             const nextFlash = Math.random() * 650 + 150;
             setTimeout(triggerSleazeFlash, nextFlash);
         }
@@ -159,7 +160,7 @@
             }
         }
 
-        // --- ENGINE DA MÁQUINA DE ESCREVER (Opção A) ---
+        // --- ENGINE DA MÁQUINA DE ESCREVER ---
         const elementsToType = Array.from(sourceBlock.querySelectorAll('[data-type]'));
         let currentElementIndex = 0;
 
@@ -243,7 +244,6 @@
                     el.innerHTML = currentHTML;
                     el.appendChild(cursor);
 
-                    // Quebra de linha física gera o estalo instantâneo no scroll
                     const currentCursorTop = cursor.getBoundingClientRect().top;
                     if (Math.abs(currentCursorTop - lastCursorTop) > 5) {
                         centralizeOnCursor();
@@ -274,7 +274,7 @@
         }
 
         window.addEventListener('load', () => {
-            triggerSleazeFlash(); // Arranca o piscar plano e cru
+            triggerSleazeFlash(); 
             typeNextElement();   
         });
     </script>
